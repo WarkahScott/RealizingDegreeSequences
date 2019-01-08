@@ -10,6 +10,10 @@ public class Window extends JFrame
 	public Window(int width, int height)
 	{
 		super("Realizing Degree Sequences");
+		try 
+		{
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (Exception e) {}
 		this.setSize(width, height);
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.setVisible(true);

@@ -7,6 +7,7 @@ import java.io.*;
 
 public class Main
 {
+	
 	public static PriorityQueue<Vertex> vertices = null;
 	public static int[] degrees = null;
 	public static ArrayList<ArrayList<Vertex>> graphs = null;
@@ -203,7 +204,7 @@ public class Main
 	{
 		Scanner file = null;
 		int result = Integer.MIN_VALUE;
-		Window w = new Window(400, 400);
+		Window w = new Window(10, 10);
 		JFileChooser selected = new JFileChooser();
 		FileFilter filter = new FileNameExtensionFilter("Text File", "txt");
 		selected.setFileFilter(filter);
