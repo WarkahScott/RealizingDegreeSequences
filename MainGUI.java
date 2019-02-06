@@ -1,15 +1,19 @@
 import java.io.File;
+import java.util.ArrayList;
 
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
@@ -57,9 +61,7 @@ public class MainGUI extends Application
 																				 });
 		Button generate = new Button("Generate Graph");
 		generate.setOnAction(e -> 	{
-										HavelHakimi2 network = new HavelHakimi2(input.getText());
-										
-										input.setText(network.getOutput());
+										manualEntryGraphs(window, input);
 								  	});
 		
 		HBox h1 = new HBox(20, r1, r2);
@@ -69,6 +71,39 @@ public class MainGUI extends Application
 		v1.setAlignment(Pos.CENTER);
 		
 		return new Scene(v1, 400, 200);
+	}
+	
+	private static void manualEntryGraphs(Stage owner, TextField input)
+	{
+		HavelHakimi2 network = new HavelHakimi2(input.getText());
+		ArrayList<Group> max = network.getMaxHH();
+		ArrayList<Group> min = network.getMinHH();
+		ArrayList<Group> uni = network.getUniHH();
+		ArrayList<Group> pro = network.getProHH();
+		//ArrayList<Group> par = network.getParHH();
+		
+		Stage view = new Stage();
+		view.setResizable(false);
+		view.initModality(Modality.WINDOW_MODAL);
+		view.initOwner(owner);
+		
+		GridPane graphs = new GridPane();
+		graphs.setHgap(10);
+		graphs.setVgap(10);
+		
+		if(max != null && !max.isEmpty())
+			graphs.add(max.get(max.size() - 1), 0, 0);
+		if(min != null && !min.isEmpty())
+			graphs.add(min.get(min.size() - 1), 1, 0);
+		if(uni != null && !uni.isEmpty())
+			graphs.add(uni.get(uni.size() - 1), 0, 1);
+		if(pro != null && !pro.isEmpty())
+			graphs.add(pro.get(pro.size() - 1), 1, 1);
+		
+		Scene display = new Scene(graphs);
+		view.setScene(display);
+		view.show();
+		input.setText(network.getOutput());
 	}
 	
 	private static Scene FileInputScene(Stage window)

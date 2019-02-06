@@ -46,10 +46,10 @@ public class Vertex2 implements Comparable<Vertex2>
 	@Override
 	public int compareTo(Vertex2 v) 
 	{
-		if(this.degree == v.degree)
+		if(this.bucket == v.bucket)
 			return this.id - v.id;
 		else
-			return v.degree - this.degree;
+			return v.bucket - this.bucket;
 	}
 
 	public int getX() 
