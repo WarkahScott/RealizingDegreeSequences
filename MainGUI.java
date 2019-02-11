@@ -1,15 +1,21 @@
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.*;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
@@ -24,12 +30,10 @@ public class MainGUI extends Application
 	{
 		mainStage.setTitle("Realizing Degree Sequences");
 		mainStage.getIcons().add(new Image(MainGUI.class.getResourceAsStream("Abstergo.png")));
-		mainStage.setWidth(400);
-		mainStage.setHeight(200);
 		
 		//Centers the window
 		Rectangle2D screen = Screen.getPrimary().getBounds();
-		mainStage.setX((screen.getMaxX() - 400) / 2);
+		mainStage.setX((screen.getMaxX() - 525) / 2);
 		mainStage.setY((screen.getMaxY() - 200) / 2);
 		
 		mainStage.setResizable(false);
@@ -45,6 +49,7 @@ public class MainGUI extends Application
 		Label prompt = new Label("Enter your input below:");
 		TextField input = new TextField();
 		input.setMaxWidth(350);
+		input.setOnMouseClicked(e -> input.selectAll());
 		
 		RadioButton r1 = new RadioButton("Single-Line");
 		RadioButton r2 = new RadioButton("File");
@@ -59,50 +64,103 @@ public class MainGUI extends Application
 																					window.setScene(FileInputScene(window));
 																					window.show();
 																				 });
+		
+		CheckBox max = new CheckBox("Max");
+			max.setAllowIndeterminate(false);
+		CheckBox min = new CheckBox("Min");
+			min.setAllowIndeterminate(false);
+		CheckBox uni = new CheckBox("Uniform");
+			uni.setAllowIndeterminate(false);
+		CheckBox pro = new CheckBox("Probabilistic");
+			pro.setAllowIndeterminate(false);
+		CheckBox par = new CheckBox("Paramaterized");
+			par.setAllowIndeterminate(false);
+			
+		TextField parameter = new TextField();
+		parameter.setPrefSize(50, 15);
+		
+		HBox checkboxes = new HBox(20, max, min, uni, pro, par);
+			checkboxes.setAlignment(Pos.CENTER);
+		HBox selection = new HBox(5, checkboxes, parameter);
+			selection.setAlignment(Pos.CENTER);
+			
 		Button generate = new Button("Generate Graph");
 		generate.setOnAction(e -> 	{
-										manualEntryGraphs(window, input);
+										Set<String> chosen = new HashSet<String>();
+										for(Node c : checkboxes.getChildren())
+											if(((CheckBox) c).isSelected())
+												chosen.add(((CheckBox) c).getText());
+										try
+										{
+											int num = Integer.parseInt(parameter.getText());
+											manualEntryGraphs(window, input, chosen, num);
+										}
+										catch(NumberFormatException x)
+										{
+											manualEntryGraphs(window, input, chosen, null);
+										}
 								  	});
 		
 		HBox h1 = new HBox(20, r1, r2);
 		h1.setAlignment(Pos.CENTER);
 		
-		VBox v1 = new VBox(20, prompt, input, h1, generate);
+		VBox v1 = new VBox(20, prompt, input, h1, selection, generate);
 		v1.setAlignment(Pos.CENTER);
 		
-		return new Scene(v1, 400, 200);
+		return new Scene(v1, 525, 200);
 	}
 	
-	private static void manualEntryGraphs(Stage owner, TextField input)
+	private static void manualEntryGraphs(Stage owner, TextField input, Set<String> chosen, Integer parameter)
 	{
-		HavelHakimi2 network = new HavelHakimi2(input.getText());
+		HavelHakimi2 network;
+		if(parameter == null)
+			network = new HavelHakimi2(input.getText());
+		else
+			network = new HavelHakimi2(input.getText(), parameter.intValue());
 		ArrayList<Group> max = network.getMaxHH();
 		ArrayList<Group> min = network.getMinHH();
 		ArrayList<Group> uni = network.getUniHH();
 		ArrayList<Group> pro = network.getProHH();
-		//ArrayList<Group> par = network.getParHH();
+		ArrayList<Group> par = network.getParHH();
 		
-		Stage view = new Stage();
-		view.setResizable(false);
-		view.initModality(Modality.WINDOW_MODAL);
-		view.initOwner(owner);
-		
-		GridPane graphs = new GridPane();
-		graphs.setHgap(10);
-		graphs.setVgap(10);
-		
-		if(max != null && !max.isEmpty())
-			graphs.add(max.get(max.size() - 1), 0, 0);
-		if(min != null && !min.isEmpty())
-			graphs.add(min.get(min.size() - 1), 1, 0);
-		if(uni != null && !uni.isEmpty())
-			graphs.add(uni.get(uni.size() - 1), 0, 1);
-		if(pro != null && !pro.isEmpty())
-			graphs.add(pro.get(pro.size() - 1), 1, 1);
-		
-		Scene display = new Scene(graphs);
-		view.setScene(display);
-		view.show();
+		if(network.isGraphic() && !chosen.isEmpty())
+		{
+			Stage view = new Stage();
+			view.setTitle("Sequence: " + network.getSequence());
+			view.setResizable(true);
+			view.setMinWidth(420);
+			view.setMaxWidth(1200);
+			view.setMinHeight(420);
+			view.setMaxHeight(840);
+			view.initModality(Modality.WINDOW_MODAL);
+			view.initOwner(owner);
+			
+			FlowPane graphs = new FlowPane();
+			graphs.setPadding(new Insets(5));
+			graphs.setHgap(5);
+			graphs.setVgap(5);
+			graphs.setPrefWrapLength(1165);
+			graphs.setPrefHeight(400);
+			
+			if(!max.isEmpty() && chosen.contains("Max"))
+				graphs.getChildren().add(max.get(max.size() - 1));
+			if(!min.isEmpty() && chosen.contains("Min"))
+				graphs.getChildren().add(min.get(min.size() - 1));
+			if(!uni.isEmpty() && chosen.contains("Uniform"))
+				graphs.getChildren().add(uni.get(uni.size() - 1));
+			if(!pro.isEmpty() && chosen.contains("Probabilistic"))
+				graphs.getChildren().add(pro.get(pro.size() - 1));
+			if(par != null && !par.isEmpty() && chosen.contains("Paramaterized"))
+				graphs.getChildren().add(par.get(par.size() - 1));
+			
+			if(graphs.getChildren().size() < 3)
+				graphs.setMaxWidth(graphs.getChildren().size() * 400);
+			
+			Scene display = new Scene(graphs);
+			view.setScene(display);
+			view.sizeToScene();
+			view.show();
+		}
 		input.setText(network.getOutput());
 	}
 	
@@ -150,16 +208,76 @@ public class MainGUI extends Application
 																					window.show();
 																				 });
 		
+		CheckBox max = new CheckBox("Max");
+			max.setAllowIndeterminate(false);
+		CheckBox min = new CheckBox("Min");
+			min.setAllowIndeterminate(false);
+		CheckBox uni = new CheckBox("Uniform");
+			uni.setAllowIndeterminate(false);
+		CheckBox pro = new CheckBox("Probabilistic");
+			pro.setAllowIndeterminate(false);
+		CheckBox par = new CheckBox("Parameterized");
+			par.setAllowIndeterminate(false);
+			par.setDisable(true);
+	
+		HBox checkboxes = new HBox(20, max, min, uni, pro, par);
+			checkboxes.setAlignment(Pos.CENTER);
+		
 		HBox h1 = new HBox(input, select);
 		h1.setAlignment(Pos.CENTER);
 		HBox h2 = new HBox(20, r1, r2);
 		h2.setAlignment(Pos.CENTER);
 		
-		VBox v1 = new VBox(20, prompt, h1, h2, generate);
+		VBox v1 = new VBox(20, prompt, h1, h2, checkboxes, generate);
 		v1.setAlignment(Pos.CENTER);
 		
+		return new Scene(v1, 450, 200);
+	}
+	
+	private static void fileEntryGraphs(Stage owner, TextField input, Set<String> chosen)
+	{
+		HavelHakimi2 network = new HavelHakimi2(input.getText());
+		ArrayList<Group> max = network.getMaxHH();
+		ArrayList<Group> min = network.getMinHH();
+		ArrayList<Group> uni = network.getUniHH();
+		ArrayList<Group> pro = network.getProHH();
+		//ArrayList<Group> par = network.getParHH();
 		
-		return new Scene(v1, 400, 200);
+		if(network.isGraphic() && !chosen.isEmpty())
+		{
+			Stage view = new Stage();
+			view.setTitle("Sequence: " + network.getSequence());
+			view.setResizable(true);
+			view.setMinWidth(790);
+			view.setMaxWidth(1200);
+			view.setMinHeight(420);
+			view.setMaxHeight(850);
+			view.initModality(Modality.WINDOW_MODAL);
+			view.initOwner(owner);
+			
+			TilePane graphs = new TilePane();
+			graphs.setHgap(10);
+			graphs.setVgap(10);
+			graphs.setPrefWidth(780);
+			graphs.setPrefRows(2);
+			graphs.setPrefColumns(3);
+			
+			if(!max.isEmpty() && chosen.contains("Max"))
+				graphs.getChildren().add(max.get(max.size() - 1));
+			if(!min.isEmpty() && chosen.contains("Min"))
+				graphs.getChildren().add(min.get(min.size() - 1));
+			if(!uni.isEmpty() && chosen.contains("Uniform"))
+				graphs.getChildren().add(uni.get(uni.size() - 1));
+			if(!pro.isEmpty() && chosen.contains("Probabilistic"))
+				graphs.getChildren().add(pro.get(pro.size() - 1));
+			//if(!par.isEmpty() && chosen.contains("Parametric"))
+			//	graphs.getChildren().add(par.get(par.size() - 1));
+			
+			Scene display = new Scene(graphs);
+			view.setScene(display);
+			view.show();
+		}
+		input.setText(network.getOutput());
 	}
 	
 	public static void main(String[] args)

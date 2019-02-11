@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -20,7 +21,8 @@ public class HavelHakimi2
 	private ArrayList<Group> minHavelHakimi;
 	private ArrayList<Group> uniHavelHakimi;
 	private ArrayList<Group> proHavelHakimi;
-	//private ArrayList<Vertex2> parHavelHakimi;
+	private ArrayList<Group> parHavelHakimi;
+	private boolean graphic;
 	
 	public HavelHakimi2(String input)
 	{
@@ -36,23 +38,29 @@ public class HavelHakimi2
 			minHavelHakimi = new ArrayList<Group>();
 			uniHavelHakimi = new ArrayList<Group>();
 			proHavelHakimi = new ArrayList<Group>();
+			parHavelHakimi = new ArrayList<Group>();
 			
 			maxHH();
 			minHH();
+			uniformRandomHH();
+			probabilisticRandomHH();
 		}
 	}
-	
-	public String getOutput()
+	public HavelHakimi2(String input, int parameter)
 	{
-		return output;
+		this(input);
+		this.parameterizedRandomHH(parameter);
 	}
+	
+	public String getOutput() { return output; }
+	public String getSequence() { return sequence; }
+	public boolean isGraphic() { return graphic; }
 	
 	public ArrayList<Group> getMaxHH() { return maxHavelHakimi; }
 	public ArrayList<Group> getMinHH() { return minHavelHakimi; }
 	public ArrayList<Group> getUniHH() { return uniHavelHakimi; }
 	public ArrayList<Group> getProHH() { return proHavelHakimi; }
-	//public ArrayList<Group> getParHH() { return  null; }
-	
+	public ArrayList<Group> getParHH() { return parHavelHakimi; }
 	
 	private void maxHH()
 	{
@@ -81,9 +89,10 @@ public class HavelHakimi2
 		output += (graphic) ? "is graphic." : "is not graphic.";
 		
 		if(graphic)
-			maxHavelHakimi.add(draw(vertices));
+			maxHavelHakimi.add(draw(vertices, "Max"));
+		
+		this.graphic = graphic;
 	}
-	
 	public void minHH()
 	{
 		boolean graphic = true;
@@ -93,7 +102,7 @@ public class HavelHakimi2
 		{
 			while(vertices.get(prev).getDegree() == 0)
 				prev--;
-			Vertex2 v = vertices.get(prev);
+			Vertex2 v = vertices.remove(prev);
 			
 			while(graphic && v.getDegree() > 0)
 			{
@@ -113,15 +122,179 @@ public class HavelHakimi2
 		output += (graphic) ? "is graphic." : "is not graphic.";
 		
 		if(graphic)
-			minHavelHakimi.add(draw(vertices));
+			minHavelHakimi.add(draw(vertices, "Min"));
+		
+		this.graphic = graphic;
 	}
-	
 	public void uniformRandomHH()
 	{
+		boolean graphic = true;
+		vertices = initVertices(input);
+		List<Vertex2> tmp = new LinkedList<Vertex2>();
+		while(graphic && vertices.get(0).getBucket() > 0)
+		{
+			int index = (int) (Math.random() * vertices.size());
+			Vertex2 v = vertices.remove(index);
+			
+			while(graphic && v.getDegree() > 0)
+			{	
+				if(vertices.isEmpty())
+				{
+					graphic = false;
+					break;
+				}
+				Vertex2 v2 = vertices.remove(0);
+				graphic = v.connect(v2);
+				v2.setBucket(v2.getBucket() - 1);
+				vertices.add(v2);
+			}
+			
+			v.setBucket(0);
+			tmp.add(v);
+			
+			vertices.sort(null);
+		}
+		while(!vertices.isEmpty())
+			tmp.add(vertices.remove(0));
+		vertices = tmp;
+		vertices.sort(null);
 		
+		output = "The degree sequence " + sequence;
+		output += (graphic) ? "is graphic." : "is not graphic.";
+		
+		if(graphic)
+			uniHavelHakimi.add(draw(vertices, "Uniform Prob."));
+		
+		this.graphic = graphic;
 	}
-	public void probabilisticRandomHH(){}
-	public void parameterizedRandomHH(){}
+	public void probabilisticRandomHH()
+	{
+		boolean graphic = true;
+		vertices = initVertices(input);
+		List<Vertex2> tmp = new LinkedList<Vertex2>();
+		while(graphic && vertices.get(0).getBucket() > 0)
+		{
+			Vertex2 v = selectPivot();
+			
+			while(graphic && v.getDegree() > 0)
+			{
+				Vertex2 v2 = vertices.remove(0);
+				graphic = v.connect(v2);
+				v2.setBucket(v2.getBucket() - 1);
+				vertices.add(v2);
+			}
+			
+			v.setBucket(0);
+			tmp.add(v);
+			
+			vertices.sort(null);
+		}
+		
+		while(!vertices.isEmpty())
+			tmp.add(vertices.remove(0));
+		vertices = tmp;
+		vertices.sort(null);
+		
+		output = "The degree sequence " + sequence;
+		output += (graphic) ? "is graphic." : "is not graphic.";
+		
+		if(graphic)
+			proHavelHakimi.add(draw(vertices, "Random Prob."));
+		
+		this.graphic = graphic;
+	}
+	public void parameterizedRandomHH(int parameter)
+	{
+		boolean graphic = true;
+		vertices = initVertices(input);
+		List<Vertex2> tmp = new LinkedList<Vertex2>();
+		while(graphic && vertices.get(0).getBucket() > 0)
+		{
+			Vertex2 v = selectParametricPivot(parameter);
+			
+			while(graphic && v.getDegree() > 0)
+			{
+				Vertex2 v2 = vertices.remove(0);
+				graphic = v.connect(v2);
+				v2.setBucket(v2.getBucket() - 1);
+				vertices.add(v2);
+			}
+			
+			v.setBucket(0);
+			tmp.add(v);
+			
+			vertices.sort(null);
+		}
+		
+		while(!vertices.isEmpty())
+			tmp.add(vertices.remove(0));
+		vertices = tmp;
+		vertices.sort(null);
+		
+		output = "The degree sequence " + sequence;
+		output += (graphic) ? "is graphic." : "is not graphic.";
+		
+		if(graphic)
+			parHavelHakimi.add(draw(vertices, "Parameter : " + parameter));
+		
+		this.graphic = graphic;
+	}
+	
+	private Vertex2 selectPivot()
+	{
+		int total = 0;
+		List<Integer> set = new ArrayList<Integer>();
+		Vertex2 val = null;
+		
+		for(Vertex2 vtx : vertices)
+		{
+			total += vtx.getDegree();
+			for(int i = 0; i < vtx.getDegree(); i++)
+				set.add(vtx.getId());
+		}
+		
+		Collections.shuffle(set);
+		
+		int index = (int) (Math.random() * total);
+		for(int i = 0; i < vertices.size(); i++)
+		{
+			if(vertices.get(i).getId() == set.get(index))
+			{
+				val = vertices.remove(i);
+				break;
+			}	
+		}
+		
+		return val;
+	}
+	private Vertex2 selectParametricPivot(int parameter)
+	{
+		int total = 0;
+		List<Integer> set = new ArrayList<Integer>();
+		Vertex2 val = null;
+		
+		for(Vertex2 vtx : vertices)
+		{
+			int tmp = (int) Math.pow(vtx.getDegree(), parameter);
+			total += tmp;
+			for(int i = 0; i < tmp; i++)
+				set.add(vtx.getId());
+		}
+		
+		Collections.shuffle(set);
+		
+		int index = (int) (Math.random() * total);
+		for(int i = 0; i < vertices.size(); i++)
+		{
+			if(vertices.get(i).getId() == set.get(index))
+			{
+				val = vertices.remove(i);
+				break;
+			}	
+		}
+		
+		return val;
+	}
 	
 	private static boolean isValidInput(String input)
 	{
@@ -193,7 +366,7 @@ public class HavelHakimi2
 		return vertices;
 	}
 	
-	private Group draw(List<Vertex2> vertices)
+	private Group draw(List<Vertex2> vertices, String graph)
 	{
 		Group page = new Group();
 		
@@ -217,6 +390,10 @@ public class HavelHakimi2
 			page.getChildren().add(vertex);
 			page.getChildren().add(label);
 		}
+		
+		Text graphLabel = new Text(20, 30, graph);
+		graphLabel.setFont(Font.font("arial", FontWeight.BOLD, null, 16));
+		page.getChildren().add(graphLabel);
 		
 		return page;
 	}
